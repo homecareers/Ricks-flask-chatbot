@@ -114,7 +114,7 @@ def get_ai_response(message, history, user_id, search=None):
             prompt = f"User: {message}\n\nHere’s the most recent web data:\n{search}\n\nUse this to enhance your response."
         messages.append({"role": "user", "content": prompt})
         payload = {
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o",
             "messages": messages,
             "max_tokens": 400,
             "temperature": 0.7
