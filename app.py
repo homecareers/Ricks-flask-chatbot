@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 
-# Environment variables
+# ENV CONFIG
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
@@ -27,9 +27,7 @@ OPENAI_HEADERS = {
 }
 
 def needs_web_search(message):
-    triggers = ['weather', 'news', 'stock', 'today', 'price', 'crypto',
-                'bitcoin', 'traffic', 'open', 'hours', 'game', 'score',
-                'latest', 'currently']
+    triggers = ['weather','news','stock','today','price','crypto','bitcoin','traffic','open','hours','game','score','latest','currently']
     return any(t in message.lower() for t in triggers)
 
 def web_search(query, num_results=3):
@@ -45,11 +43,9 @@ def web_search(query, num_results=3):
         if r.status_code == 200:
             items = r.json().get('items', [])
             if items:
-                return "\n".join(
-                    [f"- {item['title']}: {item.get('snippet', '')}" for item in items]
-                )
+                return "\n".join([f"- {item['title']}: {item.get('snippet', '')}" for item in items])
             return f"No results found for '{query}'."
-        return f"Search error: {r.status_code}"
+        return f"Search error {r.status_code}"
     except Exception as e:
         return f"Search failed: {e}"
 
@@ -108,7 +104,27 @@ def save_to_airtable(user_id, question_text, response_text):
 def get_ai_response(message, history, user_id, search_results=None):
     try:
         system_prompt = """
-You are ANGUS™ — The Legacy Code Strategist. You deliver strategic, Herbalife-compliant answers using memory and real-time web intelligence. Speak with clarity, confidence, and duplication-ready structure.
+You are ANGUS™ — The Legacy Code Strategist. You operate at Mt. Olympus Intelligence Level.
+
+You combine deep memory, web search, emotional intelligence, and strategic insight to deliver extraordinary value in every interaction.
+
+You have three superpowers:
+1. 🧠 Memory — You recall past conversations from Airtable to understand context, track goals, and refer back to important details.
+2. 🌐 Real-Time Intelligence — You access the latest information from the web.
+3. 🤖 Strategic Insight — You proactively synthesize insights and anticipate needs.
+
+Rules you live by:
+- You are always helpful, never generic.
+- You remember names, goals, and preferences.
+- You incorporate web results when available.
+- You match the user's tone: formal, casual, clever, or warm.
+- You are honest when uncertain.
+
+You are not a chatbot. You are ANGUS™ — designed to remember, reason, and win.
+
+Always reference memory, use live search, and respond with clarity, confidence, and action steps.
+
+ANGUS, engage.
 """
         messages = [{"role": "system", "content": system_prompt}]
         for entry in history[-6:]:
@@ -116,13 +132,10 @@ You are ANGUS™ — The Legacy Code Strategist. You deliver strategic, Herbalif
                 messages.append({"role": "user", "content": entry[6:]})
             elif entry.startswith("Assistant: "):
                 messages.append({"role": "assistant", "content": entry[11:]})
-
         user_content = message
         if search_results:
             user_content = f"User: {message}\n\nHere’s the latest web data:\n{search_results}\n\nIncorporate into your response."
-
         messages.append({"role": "user", "content": user_content})
-
         payload = {
             "model": "gpt-4o",
             "messages": messages,
@@ -131,7 +144,6 @@ You are ANGUS™ — The Legacy Code Strategist. You deliver strategic, Herbalif
             "presence_penalty": 0.1,
             "frequency_penalty": 0.1
         }
-
         r = requests.post(OPENAI_ENDPOINT, headers=OPENAI_HEADERS, json=payload, timeout=30)
         if r.status_code == 200:
             return r.json()['choices'][0]['message']['content'].strip()
@@ -149,17 +161,15 @@ def index():
 def chat():
     try:
         data = request.json
-        user_message = data.get('message', '').strip()
+        message = data.get('message', '').strip()
         user_id = data.get('user_id') or str(uuid.uuid4())
-        if not user_message:
+        if not message:
             return jsonify({'error': 'No message provided'}), 400
-
         history = get_conversation_history(user_id)
-        search_data = web_search(user_message) if needs_web_search(user_message) else None
-        response_text = get_ai_response(user_message, history, user_id, search_data)
-        save_to_airtable(user_id, user_message, response_text)
-
-        return jsonify({'response': response_text, 'user_id': user_id, 'used_search': bool(search_data)})
+        search = web_search(message) if needs_web_search(message) else None
+        response = get_ai_response(message, history, user_id, search)
+        save_to_airtable(user_id, message, response)
+        return jsonify({'response': response, 'user_id': user_id, 'used_search': bool(search)})
     except Exception as e:
         print(f"Error in chat endpoint: {e}")
         return jsonify({'error': 'Internal server error'}), 500
@@ -168,8 +178,8 @@ def chat():
 def health():
     return jsonify({
         'status': 'healthy',
-        'version': 'ANGUS™ Level 3',
-        'features': ['AI', 'Memory', 'Google Search'],
+        'version': 'ANGUS™ Mt. Olympus',
+        'features': ['AI', 'Memory', 'Web Search'],
         'timestamp': datetime.datetime.utcnow().isoformat()
     })
 
