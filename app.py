@@ -3,10 +3,11 @@ import requests
 import datetime
 import uuid
 import os
+import re
 
 app = Flask(__name__)
 
-# Configuration - will use environment variables on Railway
+# Configuration - Railway environment variables only
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
@@ -26,6 +27,74 @@ OPENAI_HEADERS = {
     "Authorization": f"Bearer {OPENAI_API_KEY}",
     "Content-Type": "application/json"
 }
+
+def needs_web_search(message):
+    """Determine if message needs current web information"""
+    search_triggers = [
+        # Weather and conditions
+        'weather', 'temperature', 'forecast', 'rain', 'snow', 'sunny', 'cloudy',
+        # News and current events
+        'news', 'latest', 'recent', 'current', 'breaking', 'happening', 'today',
+        # Financial
+        'stock', 'price', 'cost', 'worth', 'value', 'market', 'crypto', 'bitcoin',
+        # Time-sensitive
+        'now', 'today', 'this week', 'this month', 'currently',
+        # Sports and events
+        'score', 'game', 'match', 'winner', 'result', 'championship',
+        # Business hours and availability
+        'hours', 'open', 'closed', 'available',
+        # Traffic and travel
+        'traffic', 'route', 'directions', 'flight'
+    ]
+    
+    message_lower = message.lower()
+    return any(trigger in message_lower for trigger in search_triggers)
+
+def web_search(query, num_results=3):
+    """Search the web for current information using DuckDuckGo"""
+    try:
+        # DuckDuckGo Instant Answer API (free, no key required)
+        search_url = "https://api.duckduckgo.com/"
+        params = {
+            'q': query,
+            'format': 'json',
+            'no_redirect': '1',
+            'no_html': '1',
+            'skip_disambig': '1'
+        }
+        
+        response = requests.get(search_url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Try to get instant answer
+            if data.get('AbstractText'):
+                return f"Current information: {data['AbstractText'][:300]}"
+            
+            # Try to get definition
+            if data.get('Definition'):
+                return f"Current definition: {data['Definition'][:300]}"
+            
+            # Try to get answer
+            if data.get('Answer'):
+                return f"Current info: {data['Answer'][:300]}"
+            
+            # Try to get related topics
+            if data.get('RelatedTopics'):
+                topics = data['RelatedTopics'][:2]
+                results = []
+                for topic in topics:
+                    if isinstance(topic, dict) and topic.get('Text'):
+                        results.append(topic['Text'][:200])
+                if results:
+                    return f"Current information: {' | '.join(results)}"
+        
+        return f"I searched for current information about '{query}' but couldn't find specific real-time data. I'll provide a general response based on my knowledge."
+        
+    except Exception as e:
+        print(f"Web search error: {e}")
+        return None
 
 def get_conversation_history(user_id, limit=5):
     """Get recent conversation history from Airtable"""
@@ -67,9 +136,9 @@ def save_to_airtable(user_id, message, response):
             "fields": {
                 "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
                 "user_id": user_id,
-                "bot_id": "flask_web_bot",
+                "bot_id": "flask_web_bot_level3",
                 "question": message,
-                "tags": "web_chat"
+                "tags": "web_chat_level3"
             }
         }
         
@@ -80,9 +149,9 @@ def save_to_airtable(user_id, message, response):
             "fields": {
                 "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
                 "user_id": user_id,
-                "bot_id": "flask_web_bot",
+                "bot_id": "flask_web_bot_level3",
                 "response": response[:1000],  # Limit length for Airtable
-                "tags": "web_chat"
+                "tags": "web_chat_level3"
             }
         }
         
@@ -94,30 +163,45 @@ def save_to_airtable(user_id, message, response):
         print(f"Error saving to Airtable: {e}")
         return False
 
-def get_ai_response(message, conversation_history, user_id):
-    """Get AI response with conversation context"""
+def get_ai_response(message, conversation_history, user_id, search_results=None):
+    """Get Level 3 AI response with conversation context and optional search results"""
     try:
+        # Enhanced system prompt for Level 3
+        system_prompt = """You are an intelligent AI assistant with perfect memory and access to current information. 
+
+Key capabilities:
+- You remember all previous conversations with this user
+- You have access to real-time web search results when needed
+- You provide contextual responses based on conversation history
+- You're helpful, accurate, and engaging
+
+Use conversation history to provide personalized responses. When you have current search results, integrate them naturally into your response."""
+
         # Build conversation context
-        messages = [
-            {"role": "system", "content": "You are a helpful AI assistant with memory. Use conversation history to provide contextual responses. Be friendly and remember details from previous messages."}
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
         
-        # Add conversation history
-        for msg in conversation_history[-6:]:  # Last 6 messages for context
+        # Add recent conversation history for context
+        for msg in conversation_history[-6:]:
             if msg.startswith("User: "):
                 messages.append({"role": "user", "content": msg[6:]})
             elif msg.startswith("Assistant: "):
                 messages.append({"role": "assistant", "content": msg[11:]})
         
-        # Add current message
-        messages.append({"role": "user", "content": message})
+        # Add current message with search context if available
+        current_message = message
+        if search_results:
+            current_message = f"User question: {message}\n\nCurrent information from web search: {search_results}\n\nPlease provide a helpful response that incorporates the current information with your knowledge and our conversation history."
         
-        # Call OpenAI API
+        messages.append({"role": "user", "content": current_message})
+        
+        # Call OpenAI API with enhanced parameters for Level 3
         payload = {
             "model": "gpt-3.5-turbo",
             "messages": messages,
-            "max_tokens": 300,
-            "temperature": 0.7
+            "max_tokens": 400,
+            "temperature": 0.7,
+            "presence_penalty": 0.1,
+            "frequency_penalty": 0.1
         }
         
         response = requests.post(OPENAI_ENDPOINT, headers=OPENAI_HEADERS, json=payload, timeout=30)
@@ -139,7 +223,7 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Handle chat messages"""
+    """Handle chat messages with Level 3 intelligence"""
     try:
         data = request.json
         user_message = data.get('message', '').strip()
@@ -152,13 +236,21 @@ def chat():
         if not user_id:
             user_id = str(uuid.uuid4())
         
-        print(f"Chat request from user {user_id}: {user_message}")
+        print(f"Level 3 chat request from user {user_id}: {user_message}")
         
         # Get conversation history
         conversation_history = get_conversation_history(user_id)
         
-        # Get AI response
-        ai_response = get_ai_response(user_message, conversation_history, user_id)
+        # Check if we need to search the web
+        search_results = None
+        if needs_web_search(user_message):
+            print("Performing web search for current information...")
+            search_results = web_search(user_message)
+            if search_results:
+                print(f"Search results: {search_results[:100]}...")
+        
+        # Get Level 3 AI response with search context
+        ai_response = get_ai_response(user_message, conversation_history, user_id, search_results)
         
         # Save conversation to Airtable
         save_success = save_to_airtable(user_id, user_message, ai_response)
@@ -168,18 +260,24 @@ def chat():
         
         return jsonify({
             'response': ai_response,
-            'user_id': user_id
+            'user_id': user_id,
+            'used_search': search_results is not None
         })
         
     except Exception as e:
-        print(f"Error in chat endpoint: {e}")
+        print(f"Error in Level 3 chat endpoint: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/health')
 def health():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.datetime.utcnow().isoformat()})
+    return jsonify({
+        'status': 'healthy', 
+        'version': 'Level 3',
+        'features': ['AI', 'Memory', 'Web Search'],
+        'timestamp': datetime.datetime.utcnow().isoformat()
+    })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
