@@ -114,11 +114,9 @@ def get_ai_response(message, history, user_id, search=None):
             prompt = f"User: {message}\n\nHere’s the most recent web data:\n{search}\n\nUse this to enhance your response."
         messages.append({"role": "user", "content": prompt})
         payload = {
-            "model": "gpt-4o",
-            "messages": messages,
-            "max_tokens": 400,
-            "temperature": 0.7
-        }
+    "model": "gpt-4o",  # ← the elite ANGUS™ upgrade
+    ...
+}
         r = requests.post(OPENAI_ENDPOINT, headers=OPENAI_HEADERS, json=payload, timeout=30)
         if r.status_code == 200:
             return r.json()['choices'][0]['message']['content'].strip()
