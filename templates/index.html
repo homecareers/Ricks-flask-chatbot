@@ -5,133 +5,183 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANGUS™ - Legacy Code Strategist</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
             background: #0B0B0B;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        
         .chat-container {
             background: #1A1A1A;
             border-radius: 15px;
-            padding: 30px;
+            width: 95%;
+            max-width: 800px;
+            height: 95vh;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
+        
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            padding: 10px;
+            flex-shrink: 0;
+            background: #1A1A1A;
         }
+        
         .header img {
-            max-width: 200px;
+            max-width: 70px;
             height: auto;
             margin: 0 auto;
             display: block;
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
+        
         .header p {
             color: #CCCCCC;
-            margin: 15px 0 0 0;
-            font-size: 1.1em;
+            margin: 5px 0 0 0;
+            font-size: 0.85em;
             font-weight: 500;
         }
+        
         .chat-history {
-            border: 1px solid #333333;
-            border-radius: 10px;
-            padding: 20px;
-            height: 400px;
+            flex: 1;
             overflow-y: auto;
-            margin-bottom: 20px;
+            padding: 10px;
             background: #2A2A2A;
-        }
-        .message {
-            margin-bottom: 15px;
-            padding: 12px;
+            margin: 0 10px;
             border-radius: 8px;
-            animation: fadeIn 0.3s ease-in;
+            border: 1px solid #333333;
+            min-height: 0;
         }
+        
+        .message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            animation: fadeIn 0.3s ease-in;
+            font-size: 0.9em;
+        }
+        
         .user-message {
             background: linear-gradient(45deg, #3498db, #2980b9);
             color: white;
-            margin-left: 80px;
+            margin-left: 60px;
             text-align: right;
         }
+        
         .bot-message {
             background: #333333;
             color: #FFFFFF;
-            margin-right: 80px;
+            margin-right: 60px;
         }
-        .input-container {
-            display: flex;
-            gap: 10px;
-            position: relative;
+        
+        .bottom-section {
+            flex-shrink: 0;
+            padding: 8px 10px 10px 10px;
+            background: #1A1A1A;
         }
-        #messageInput {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #333333;
-            border-radius: 25px;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.3s ease;
-            background: #2A2A2A;
-            color: #FFFFFF;
-        }
-        #messageInput:focus {
-            border-color: #FFD700;
-        }
-        #messageInput::placeholder {
-            color: #AAAAAA;
-        }
-        #sendButton {
-            padding: 15px 30px;
-            background: #FFD700;
-            color: #000000;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: transform 0.2s ease;
-        }
-        #sendButton:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-        #sendButton:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+        
         .loading {
             display: none;
             text-align: center;
             color: #FFD700;
             font-style: italic;
+            font-size: 0.8em;
+            margin-bottom: 5px;
         }
+        
+        .input-container {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 3px;
+        }
+        
+        #messageInput {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #333333;
+            border-radius: 18px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            background: #2A2A2A;
+            color: #FFFFFF;
+        }
+        
+        #messageInput:focus {
+            border-color: #FFD700;
+        }
+        
+        #messageInput::placeholder {
+            color: #AAAAAA;
+        }
+        
+        #sendButton {
+            padding: 8px 16px;
+            background: #FFD700;
+            color: #000000;
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        #sendButton:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+        
+        #sendButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .enter-hint {
+            font-size: 0.7em;
+            color: #AAAAAA;
+            text-align: center;
+        }
+        
         .search-indicator {
             background: #e8f5e8;
             color: #2e7d32;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.9em;
-            margin-bottom: 10px;
+            padding: 2px 5px;
+            border-radius: 6px;
+            font-size: 0.7em;
+            margin-bottom: 3px;
             display: inline-block;
         }
-        .enter-hint {
-            font-size: 0.9em;
-            color: #AAAAAA;
-            text-align: center;
-            margin-top: 10px;
-        }
+        
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         @media (max-width: 600px) {
+            .chat-container {
+                width: 98%;
+                height: 98vh;
+            }
             .user-message { margin-left: 20px; }
             .bot-message { margin-right: 20px; }
-            .input-container { flex-direction: column; }
+            .header img { max-width: 60px; }
+            .header p { font-size: 0.8em; }
+            #messageInput { font-size: 16px; } /* Prevent zoom on iOS */
         }
     </style>
 </head>
@@ -148,14 +198,16 @@
             </div>
         </div>
         
-        <div class="loading" id="loading">🧠 ANGUS™ is thinking...</div>
-        
-        <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Ask me anything... (Press Enter to send)" autocomplete="off">
-            <button id="sendButton">Send</button>
+        <div class="bottom-section">
+            <div class="loading" id="loading">🧠 ANGUS™ is thinking...</div>
+            
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Ask me anything... (Press Enter to send)" autocomplete="off">
+                <button id="sendButton">Send</button>
+            </div>
+            
+            <div class="enter-hint">💡 Press Enter to send</div>
         </div>
-        
-        <div class="enter-hint">💡 Tip: Press Enter to send your message</div>
     </div>
 
     <script>
