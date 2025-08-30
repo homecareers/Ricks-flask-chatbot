@@ -3,104 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot with Memory</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>ANGUS™ - The Legacy Code Strategist</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .chat-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #3498db, #9b59b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            color: #7f8c8d;
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+        }
+        .chat-history {
+            border: 1px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .user-message {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            margin-left: 80px;
+            text-align: right;
+        }
+        .bot-message {
+            background: #ecf0f1;
+            color: #2c3e50;
+            margin-right: 80px;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+        #messageInput {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        #messageInput:focus {
+            border-color: #3498db;
+        }
+        #sendButton {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+        #sendButton:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        #sendButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #3498db;
+            font-style: italic;
+        }
+        .search-indicator {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .enter-hint {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            text-align: center;
+            margin-top: 10px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 600px) {
+            .user-message { margin-left: 20px; }
+            .bot-message { margin-right: 20px; }
+            .input-container { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
     <div class="chat-container">
-        <div class="chat-header">
-            <h1>AI Assistant</h1>
-            <p>I remember our conversations and learn from them</p>
+        <div class="header">
+            <h1>ANGUS™</h1>
+            <p>The Legacy Code Strategist • Mt. Olympus Intelligence Level</p>
         </div>
         
-        <div class="chat-messages" id="chat-messages">
+        <div id="chatHistory" class="chat-history">
             <div class="message bot-message">
-                <div class="message-content">
-                    Hello! I'm your AI assistant with memory. I can remember our previous conversations and provide contextual responses. How can I help you today?
-                </div>
-                <div class="message-time" id="initial-time"></div>
+                👋 Hello! I'm ANGUS™ - your Legacy Code Strategist. I have memory, web search, and strategic insight. How can I help you today?
             </div>
         </div>
         
-        <div class="chat-input-container">
-            <div class="input-group">
-                <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" disabled>
-                <button id="send-button" disabled>Send</button>
-            </div>
-            <div class="typing-indicator" id="typing-indicator" style="display: none;">
-                <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <span class="typing-text">AI is thinking...</span>
-            </div>
+        <div class="loading" id="loading">🧠 ANGUS™ is thinking...</div>
+        
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Ask me anything... (Press Enter to send)" autocomplete="off">
+            <button id="sendButton">Send</button>
         </div>
+        
+        <div class="enter-hint">💡 Tip: Press Enter to send your message</div>
     </div>
 
     <script>
-        // Global variables
-        let userId = localStorage.getItem('chatbot_user_id') || null;
-        let isWaitingForResponse = false;
-        
-        // DOM elements
-        const messagesContainer = document.getElementById('chat-messages');
-        const messageInput = document.getElementById('message-input');
-        const sendButton = document.getElementById('send-button');
-        const typingIndicator = document.getElementById('typing-indicator');
-        
-        // Initialize
-        document.getElementById('initial-time').textContent = new Date().toLocaleTimeString();
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        
-        // Add message to chat
-        function addMessage(content, isUser = false, timestamp = null) {
+        let userId = localStorage.getItem('angus_user_id') || null;
+
+        // Get DOM elements
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatHistory = document.getElementById('chatHistory');
+        const loading = document.getElementById('loading');
+
+        // Focus on input when page loads
+        messageInput.focus();
+
+        // Handle Enter key press in input field
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent default form submission
+                sendMessage();
+            }
+        });
+
+        // Handle send button click
+        sendButton.addEventListener('click', sendMessage);
+
+        function addMessage(content, isUser, hasSearch = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
             
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
+            if (!isUser && hasSearch) {
+                messageDiv.innerHTML = `
+                    <div class="search-indicator">🌐 Used web search</div>
+                    ${content}
+                `;
+            } else {
+                messageDiv.textContent = content;
+            }
             
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'message-time';
-            timeDiv.textContent = timestamp || new Date().toLocaleTimeString();
-            
-            messageDiv.appendChild(contentDiv);
-            messageDiv.appendChild(timeDiv);
-            messagesContainer.appendChild(messageDiv);
-            
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
-        
-        // Show typing indicator
-        function showTyping() {
-            typingIndicator.style.display = 'flex';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-        
-        // Hide typing indicator
-        function hideTyping() {
-            typingIndicator.style.display = 'none';
-        }
-        
-        // Send message to server
+
         async function sendMessage() {
             const message = messageInput.value.trim();
-            if (!message || isWaitingForResponse) return;
-            
+            if (!message) return;
+
+            // Disable input and show loading
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            loading.style.display = 'block';
+
             // Add user message to chat
             addMessage(message, true);
             messageInput.value = '';
-            
-            // Show typing and disable input
-            showTyping();
-            isWaitingForResponse = true;
-            sendButton.disabled = true;
-            messageInput.disabled = true;
-            
+
             try {
                 const response = await fetch('/chat', {
                     method: 'POST',
@@ -112,59 +216,32 @@
                         user_id: userId
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
-                    // Store user ID for future requests
+                    // Store user ID for session continuity
                     if (data.user_id && !userId) {
                         userId = data.user_id;
-                        localStorage.setItem('chatbot_user_id', userId);
+                        localStorage.setItem('angus_user_id', userId);
                     }
-                    
+
                     // Add bot response to chat
-                    addMessage(data.response);
+                    addMessage(data.response, false, data.used_search);
                 } else {
-                    addMessage('Sorry, I encountered an error processing your message. Please try again.');
-                    console.error('Server error:', data.error);
+                    addMessage(`Error: ${data.error || 'Something went wrong'}`, false);
                 }
             } catch (error) {
-                console.error('Network error:', error);
-                addMessage('Sorry, I had trouble connecting. Please check your internet connection and try again.');
+                addMessage('Network error: Unable to reach ANGUS™', false);
+                console.error('Error:', error);
             } finally {
-                hideTyping();
-                isWaitingForResponse = false;
-                sendButton.disabled = false;
+                // Re-enable input and hide loading
                 messageInput.disabled = false;
-                messageInput.focus();
+                sendButton.disabled = false;
+                loading.style.display = 'none';
+                messageInput.focus(); // Refocus on input for next message
             }
         }
-        
-        // Event listeners
-        sendButton.addEventListener('click', sendMessage);
-        
-        messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !isWaitingForResponse) {
-                sendMessage();
-            }
-        });
-        
-        // Prevent form submission on enter
-        messageInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        });
-        
-        // Focus on input when page loads
-        messageInput.focus();
-        
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                messageInput.focus();
-            }
-        });
     </script>
 </body>
 </html>
