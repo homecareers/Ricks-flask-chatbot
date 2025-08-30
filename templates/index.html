@@ -10,14 +10,14 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0B0B0B;
             min-height: 100vh;
         }
         .chat-container {
-            background: white;
+            background: #1A1A1A;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
         .header {
             text-align: center;
@@ -32,19 +32,19 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         .header p {
-            color: #7f8c8d;
+            color: #CCCCCC;
             margin: 15px 0 0 0;
             font-size: 1.1em;
             font-weight: 500;
         }
         .chat-history {
-            border: 1px solid #ecf0f1;
+            border: 1px solid #333333;
             border-radius: 10px;
             padding: 20px;
             height: 400px;
             overflow-y: auto;
             margin-bottom: 20px;
-            background: #f8f9fa;
+            background: #2A2A2A;
         }
         .message {
             margin-bottom: 15px;
@@ -59,8 +59,8 @@
             text-align: right;
         }
         .bot-message {
-            background: #ecf0f1;
-            color: #2c3e50;
+            background: #333333;
+            color: #FFFFFF;
             margin-right: 80px;
         }
         .input-container {
@@ -71,19 +71,24 @@
         #messageInput {
             flex: 1;
             padding: 15px;
-            border: 2px solid #ecf0f1;
+            border: 2px solid #333333;
             border-radius: 25px;
             font-size: 16px;
             outline: none;
             transition: border-color 0.3s ease;
+            background: #2A2A2A;
+            color: #FFFFFF;
         }
         #messageInput:focus {
-            border-color: #3498db;
+            border-color: #FFD700;
+        }
+        #messageInput::placeholder {
+            color: #AAAAAA;
         }
         #sendButton {
             padding: 15px 30px;
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
+            background: #FFD700;
+            color: #000000;
             border: none;
             border-radius: 25px;
             cursor: pointer;
@@ -101,7 +106,7 @@
         .loading {
             display: none;
             text-align: center;
-            color: #3498db;
+            color: #FFD700;
             font-style: italic;
         }
         .search-indicator {
@@ -115,7 +120,7 @@
         }
         .enter-hint {
             font-size: 0.9em;
-            color: #7f8c8d;
+            color: #AAAAAA;
             text-align: center;
             margin-top: 10px;
         }
